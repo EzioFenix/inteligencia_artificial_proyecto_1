@@ -37,3 +37,27 @@ class mapa:
                 return 1
             else
                 n += 1
+                
+                
+    #Se requiere de revision
+def Buscar(self)
+	self.PathList = list()
+	self.inicio.GeneratePaths(PathList)
+	while(PathList.IsFinished()):	
+		for paths in PathList:
+		
+	
+def ElimDes(self,ruta):
+	n = 0
+	for camino in self.PathList:
+	pariente = false
+		for ciudad in camino.recorrido:
+			for destino in ruta.recorrido:
+				if(destino.nombre != ciudad.nombre):
+					n+=1
+					pariente = false
+					break
+				else:
+					pariente = true
+			if(pariente)
+				self.PathList.pop(n)
