@@ -11,18 +11,15 @@ class ciudad:
     def _init_(self,nombre: str,seccion:int):
         self.nombre = nombre
         self.set_seccion(seccion)
+	print ('Se ha creado exitosamente la ciudad: '+ self.nombre+'\n')
 
 
-        """_summary_
-        """
-    def anadirRuta(self,destino,costo:int):
+    def anadirDestino(self,destino:ciudad,costo:int):
         self.destinos.append(destino)
         self.costo.append(costo)
+	print('Se ha anadido el destino: '+destino.nombre+'\tCoste: '+costo+'\n')
 
-
-        """_summary_
-        """
-    def quitarRuta(self,nombre: str):
+    def quitarDestino(self,nombre: str):
         n = 0
         for target in self.destinos:
             if target.nombre == nombre:
@@ -31,11 +28,8 @@ class ciudad:
                 break
             else:
                 n+=1
+	print('Se ha removido el destino: '+nombre+'\n')
 
-        
-
-        """_summary_
-        """
     def modCosto(self,nombre:str,costo):   
         n = 0
         for target in self.destinos:
@@ -45,19 +39,16 @@ class ciudad:
                 break
             else:
                 n+=1
-
-    """
-    Establece el valor de la sección
-    """         
+	print('Se ha modificado el coste al destino: '+nombre+' por '+'\n')
+	
     def setterSeccion(self, seccion: int):
         self.seccion = seccion
-        
-     #Se requiere de comprobación en grupo
         
     def GeneraRutas(self,lista):
     	if (self.optPath == None):
     		self.optPath = ruta()
     		self.optPath.recorrido.append(self)
+		print ('Se insertara ruta a los orígenes\n')
     	n = 0
     	for destino in self.Destinos:
     		noVisto = True
@@ -69,13 +60,16 @@ class ciudad:
     			hijo.pronderacion = self.precios.get(n) + self.optPath.ponderacion
     			hijo.recorrido.append(destino)
     			lista.append(hijo)
+			print('El destino: '+destino.nombre+'no ha sido visitado anteriormente\n')
     		n+=1
 
 def InsertarRuta(self, ruta):
 	if (self.optPath == None):
 		self.optPath = ruta
+		print('La primera vez que esta ciudad es visitada en esta ruta\n')
 		return None
 	if(self.optPath.ponderacion > ruta.ponderacion):
 		aux = self.optPath
 		self.optPath = ruta
+		print('La nueva ruta consiguió ser mejor que la establecida')
 		return aux
