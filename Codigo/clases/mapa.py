@@ -1,21 +1,27 @@
 from .ciudad import ciudad
 
 class mapa:
-    nombre = str()
+    nombre = ''
     ciudades = list()
     rutas = list()
     sectores = list()
     inicio = None
     
-
-    def anadirCiudad(self,ciudad:ciudad):
-        self.ciudades.append(ciudad)
+    def _init_(self,nombre):
+        self.nombre = nombre
+    
+    def anadirCiudad(self,nombre):
+        self.ciudades.append(ciudad(nombre,0))
         for sector in self.sectores():
             if(ciudad.seccion == sector):
                 return 0
         self.sectores.append(ciudad.sector)
         self.sectores.sort()
-        
+    def buscarCiudad(self,nombre: str):
+        for city in self.ciudades:
+            if(city.nombre == nombre):
+                return city
+        return None
     def quitarCiudad(self,nombre: str):
         n = 0
         for target in self.ciudades:
