@@ -1,7 +1,7 @@
 from .ruta import ruta
 
 class ciudad:
-    nombre = 'city'
+    nombre = str()
     optPath = None # Ruta optima
     destinos = list() # ciudades vecinas a las que estan 
     costo = list() # Costo por el destino, asociado a la lista destinos
@@ -11,7 +11,7 @@ class ciudad:
     def _init_(self,nombre: str,seccion:int):
         self.nombre = nombre
         self.set_seccion(seccion)
-	print ('Se ha creado exitosamente la ciudad: '+ self.nombre+'\n')
+	    # print('Se ha creado exitosamente la ciudad: '+ self.nombre+'\n')
 
 
     def anadirDestino(self,destino:ciudad,costo:int):
