@@ -25,11 +25,19 @@ namespace travel{
 			return 1;
 		}
 		int modificarDestino(std::string destino, int costo) {
+			std::map<std::string, int>::iterator it = this->precios.find(destino);
+			if (it != this->precios.end()) {
+				it->second = costo;
+				return 1;
+			}else
+				return 0;
 
 		}
-		int eliminarDestino() {
-
+		void eliminarDestino(std::string destino) {
+			this->destinos.erase(destino);
+			this->precios.erase(destino);
 		}
+		void mostrarDestinos(){}
 
 	};
 	struct Ruta {
@@ -123,7 +131,8 @@ namespace travel{
 travel::Mapa* mapaActual;
 
 void MenuDeCiudad(travel::Ciudad* ciudad) {
-	char opcion; std::string nombre;
+	char opcion; std::string nombre; int precio;
+	std::map<std::string, travel::Ciudad*>::iterator it;
 	std::cout << std::endl;
 	do {
 		std::cout << "Menu de la ciudad \"" << ciudad->nombre << "\"\nSeleccione una opcion:\n"
@@ -135,16 +144,31 @@ void MenuDeCiudad(travel::Ciudad* ciudad) {
 		std::cin >> opcion;
 		switch (opcion) {
 		case '1':
-			std::cout << "Insertando Destino...\n";
+			std::cout << "Insertando Destino...\nCiudades Disponibles:\n"; mapaActual->mostrarCiudades();
+			std::cout << "Elija una ciudad: "; std::cin >> nombre; it = mapaActual->ciudades.find(nombre);
+			if (it != mapaActual->ciudades.end()) {
+				std::cout << "\nInserte un precio de transito: "; std::cin >> precio;
+				ciudad->insertarDestino(it->second, precio);
+				it->second->insertarDestino(ciudad, precio);
+			}
+			else
+				std::cout << "\nLa ciudad " << nombre << " no existe\n";
 			break;
 		case '2':
-			std::cout << "Editando Destino...\n";
+			std::cout << "Editando Destino...\Destinos Disponibles:\n"; ciudad->mostrarDestinos();
+			std::cout << "Elija un destino: "; std::cin >> nombre; std::cout << "\nInserte un precio de transito: "; std::cin >> precio;
+			if(ciudad->modificarDestino(nombre, precio))
+				ciudad->destinos.find(nombre)->second->modificarDestino(ciudad->nombre, precio);
 			break;
 		case '3':
-			std::cout << "Eliminar Destino...\n";
+			std::cout << "Eliminando Destino...\Destinos Disponibles:\n"; ciudad->mostrarDestinos();
+			std::cout << "Elija un destino: "; std::cin >> nombre;
+			ciudad->destinos.find(nombre)->second->eliminarDestino(ciudad->nombre);
+			ciudad->eliminarDestino(nombre);
 			break;
 		case '4':
-			std::cout << "Estableciendo seccion...\n";
+			std::cout << "Estableciendo seccion...\n"; mapaActual->mostrarSectores();std::cout<< "Elija una seccion: "; std::cin >> nombre;
+			ciudad->seccion = nombre; std::cout << std::endl;
 			break;
 		case '5':
 			std::cout << "Regresando al Menu de Mapa...\n";
@@ -152,7 +176,7 @@ void MenuDeCiudad(travel::Ciudad* ciudad) {
 		default:
 			std::cout << "No se reconoce la opcion: " << opcion << std::endl;
 		}
-	} while (opcion != '4');
+	} while (opcion != '5');
 }
 void MenuDeMapa(bool protocole) {
 	std::cout << "Inserte el nombre del mapa: "; std::string nombre, sector;
@@ -177,7 +201,7 @@ void MenuDeMapa(bool protocole) {
 		switch (opcion) {
 		case '1':
 			std::cout << "Creando Nueva Ciudad...\nCiudades Existentes:\n"; mapaActual->mostrarCiudades();std::cout<<"Inserte el nombre de la Ciudad : ";
-			std::cin >> nombre;  std::cout << std::endl << "Sectores Disponibles"; mapaActual->mostrarSectores(); std::cout << "Elija el sector: ";
+			std::cin >> nombre;  std::cout << std::endl << "Sectores Disponibles:\n"; mapaActual->mostrarSectores(); std::cout << "Elija el sector: ";
 			std::cin >> sector; 
 			mapaActual->anadirCiudad(nombre, sector);
 			MenuDeCiudad(mapaActual->ciudades.find(nombre)->second);
