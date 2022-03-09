@@ -2,6 +2,8 @@
 #include <map>
 #include <list>
 #include <string>
+#include <fstream>
+#include <cmath>
 
 namespace travel{
 	struct Ruta;
@@ -38,6 +40,17 @@ namespace travel{
 			this->precios.erase(destino);
 		}
 		void mostrarDestinos(){}
+
+		std::string getString() {
+			std::string data;
+			data.append(this->nombre); data.append(":");
+			std::map<std::string, travel::Ciudad*>::iterator it;
+			for (it = this->destinos.begin(); it != this->destinos.end(); ++it) {
+				data.append(it->first); data.append(","); data.append(std::to_string(precios.find(it->first)->second)); data.append(";");
+			}
+			data.append("\n");
+			return data;
+		}
 
 	};
 	struct Ruta {
@@ -125,10 +138,103 @@ namespace travel{
 				std::cout << sect << std::endl;
 		}
 		
+		std::string getString() {
+			std::string data;
+			for (std::string sect : this->secciones) {
+				data.append(sect); data.append(",");
+			}
+			data.append("\n");
+			std::map<std::string, travel::Ciudad*>::iterator it;
+			for (it = this->ciudades.begin(); it != this->ciudades.end(); ++it) {
+				data.append(it->second->nombre); data.append(","); data.append(it->first); data.append("\n");
+			}
+			for (it = this->ciudades.begin(); it != this->ciudades.end(); ++it)
+				data.append(it->second->getString());
+			data.append("\n&"); data.append(this->inicio->nombre);
+		}
 	};
 }
 
 travel::Mapa* mapaActual;
+int x10(int i) {
+	int d = 1;
+	while (i > 0) {
+		d *= 10;
+		i--;
+	}
+	return d;
+}
+int toInt(std::string args) {
+	int n = 0, size = args.length();
+	for (int i = 0; i < size; i++)
+		n += (args[i] - 48) * x10(size - i-1);
+	return n;
+}
+
+travel::Mapa* cargarMapa(std::string nombre){
+	std::ifstream archive;
+	std::string data;
+	nombre.append(".mapa");
+	archive.open(nombre,std::ios::in);
+	if (archive.fail()) {
+		std::cout << "No se pudo abrir el archivo: " << nombre << std::endl;
+		return nullptr;
+	}
+	travel::Mapa* mapa = new travel::Mapa(nombre);
+	std::getline(archive, data);
+	int begin = 0,size = 0;
+	for (char a : data) //Secciones
+		if (a == ',') {
+			mapa->insertarSector(data.substr(begin, size));
+			begin += size + 1; size = 0;
+		}else size++;
+	bool state = true;
+	std::getline(archive, data); size = 0;
+	while (!archive.eof() && state) {//Ciudades
+		size = 0;
+		for (char a : data) {
+			if (a == ',')
+					mapa->anadirCiudad(data.substr(0, size), data.substr(size + 1));
+			else size++;
+			if (a == '$')
+				state = false;
+		}
+		std::getline(archive, data);
+	}
+	state = true;
+	while (!archive.eof() && state) {//Enlaces
+		begin = 0, size = 0; travel::Ciudad *city = nullptr,*destiny = nullptr;
+		for (char a : data)
+			if (a == ':') {
+				city = mapa->ciudades.find(data.substr(0, size))->second;
+				begin += size + 1; size = 0;
+			}else if (a == ',') {
+				destiny = mapa->ciudades.find(data.substr(begin, size))->second;
+				begin += size + 1; size = 0;
+			}else if (a == ';') {
+				city->insertarDestino(destiny, toInt(data.substr(begin, size)));
+				begin += size + 1; size = 0;
+			}else if (a == '&') {
+				mapa->establecerInicio(data.substr(1));
+				state = false;
+			} else size++;
+		
+		std::getline(archive, data);
+	}
+	archive.close();
+	return mapa;
+}
+int guardarMapa(travel::Mapa* mapa) {
+	std::ofstream archive; std::string name = mapa->nombre; name.append(".mapa");
+	archive.open(name, std::ios::out);
+	if (archive.fail()) {
+		std::cout << "No se pudo guardar el Mapa" << std::endl;
+		return 1;
+	}
+	archive << mapa->getString();
+	archive.close();
+	return 0;
+}
 
 void MenuDeCiudad(travel::Ciudad* ciudad) {
 	char opcion; std::string nombre; int precio;
@@ -178,11 +284,16 @@ void MenuDeCiudad(travel::Ciudad* ciudad) {
 		}
 	} while (opcion != '5');
 }
-void MenuDeMapa(bool protocole) {
+int MenuDeMapa(bool protocole) {
 	std::cout << "Inserte el nombre del mapa: "; std::string nombre, sector;
 	std::cin >> nombre;
 	if (protocole)
 		mapaActual = new travel::Mapa(nombre);
+	else {
+		mapaActual = cargarMapa(nombre);
+		if (mapaActual == nullptr)
+			return 1;
+	}
 	char opcion;
 	std::cout << std::endl;
 	do {
@@ -201,7 +312,7 @@ void MenuDeMapa(bool protocole) {
 		switch (opcion) {
 		case '1':
 			std::cout << "Creando Nueva Ciudad...\nCiudades Existentes:\n"; mapaActual->mostrarCiudades();std::cout<<"Inserte el nombre de la Ciudad : ";
-			std::cin >> nombre;  std::cout << std::endl << "Sectores Disponibles:\n"; mapaActual->mostrarSectores(); std::cout << "Elija el sector: ";
+			std::cin >> nombre;  std::cout << std::endl << "Sectores Disponibles"; mapaActual->mostrarSectores(); std::cout << "Elija el sector: ";
 			std::cin >> sector; 
 			mapaActual->anadirCiudad(nombre, sector);
 			MenuDeCiudad(mapaActual->ciudades.find(nombre)->second);
@@ -247,7 +358,8 @@ void MenuDeMapa(bool protocole) {
 		default:
 			std::cout << "No se reconoce la opcion: " << opcion << std::endl;
 		}
-	} while (opcion != '8');
+	} while (opcion != '0');
+	return 0;
 }
 int main() {
 	char opcion;
@@ -265,6 +377,7 @@ int main() {
 				break;
 			case '2':
 				std::cout << "Cargando un mapa...\n";
+				MenuDeMapa(false);
 				break;
 			case '3':
 				std::cout << "Saliendo del programa..\n";
