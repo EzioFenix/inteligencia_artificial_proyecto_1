@@ -12,11 +12,64 @@ namespace travel{
 		std::string nombre,seccion;
 		std::map<std::string, travel::Ciudad*> destinos;
 		std::map<std::string, int> precios;
+		travel::Ruta* rutaOptima = nullptr;
 
 		Ciudad(std::string nombre,std::string seccion){
 			this->nombre = nombre;
 			this->seccion = seccion;
 		}
+
+		void generarRutas(std::list<travel::Ruta*> lista){
+			if (this->rutaOptima == nullptr)
+				this->rutaOptima = new travel::Ruta();
+			std::map<std::string, travel::Ciudad*>::iterator it; bool noVisitado;
+			for (it = this->destinos.begin(); it != this->destinos.end(); ++it) {
+				noVisitado = true;
+				for (travel::Ciudad* ciudad : this->rutaOptima->recorrido)//Verificando que no se haya visitado anteriormente
+					if (!ciudad->nombre.compare(it->first)){
+						noVisitado = false;
+						break;
+					}
+				if (noVisitado) {//Si no se ha visitado
+					travel::Ruta* newRoad = new travel::Ruta(this->rutaOptima->recorrido), *lastRoad = nullptr;//Se genera una nueva ruta a partir del origen
+					newRoad->ponderacion += this->precios.find(it->first)->second; //Incluyendo el costo
+					lastRoad = it->second->visitarCiudad(newRoad); //Hacia el destino en cuestion
+					if (lastRoad == nullptr) //Si no ha sido visitada por otra ruta
+						lista.push_back(newRoad); //Se añade a la lista de rutas
+					else if (lastRoad != newRoad) //Si esta nueva ruta, fue más barata que la establecida
+						eliminarDescendencia(lista, lastRoad); //SE eliminará la descendencia que esta hubiese tenido
+				}
+			}
+		}
+		travel::Ruta* visitarCiudad(travel::Ruta* nuevaRuta) {
+			if (this->rutaOptima == nullptr) {
+				this->rutaOptima = nuevaRuta;
+				this->rutaOptima->anadirSector(this->seccion);
+				return nullptr;
+			}
+			if (this->rutaOptima->ponderacion > nuevaRuta->ponderacion) {
+				travel::Ruta* aux = this->rutaOptima;
+				this->rutaOptima = nuevaRuta;
+				this->rutaOptima->anadirSector(this->seccion);
+				return aux;
+			}
+			return nuevaRuta;
+		}
+		void eliminarDescendencia(std::list<travel::Ruta*> lista, travel::Ruta* objetivo) {
+			std::list<travel::Ruta*>::iterator it1;
+			std::list<travel::Ciudad*>::iterator it2, it3;
+			for (it1 = lista.begin(); it1 != lista.end(); ++it1) {
+				it2 = (*it1)->recorrido.begin(); bool pariente = true;
+				for(it3 = objetivo->recorrido.begin(); it3 != objetivo->recorrido.end(); ++it3,++it2)
+					if ((*it3)->nombre.compare((*it2)->nombre)) {
+						pariente = false;
+						break;
+					}
+				if (pariente)
+					lista.erase(it1);
+			}
+		}
+
 		int insertarDestino(travel::Ciudad* destino, int costo) {
 			std::string name = destino->nombre;
 			if (name.compare(this->nombre)) {
@@ -54,21 +107,37 @@ namespace travel{
 
 	};
 	struct Ruta {
-		std::list<travel::Ciudad> recorrido;
-		travel::Ciudad* ciudad = nullptr;
-		int ponderacion;
-		bool activo;
-
+		std::list<travel::Ciudad*> recorrido;
+		std::list<std::string> secciones;
+		int ponderacion = 0;
+		bool activo = true;
+		Ruta(){}
+		Ruta(std::list<travel::Ciudad*> herencia) {
+			recorrido = herencia;
+		}
+		int anadirSector(std::string sector) {
+			for (std::string sect : this->secciones)
+				if (!sect.compare(sector))
+					return 1;
+			this->secciones.push_back(sector);
+			return 0;
+		}
+		bool verificarVisita(std::list<std::string> sectores) {
+			if (sectores.size() != this->secciones.size())
+				return true;
+			activo = false;
+			return false;
+		}
 		void printRuta() {
-			for (travel::Ciudad city : recorrido)
-				std::cout << city.nombre << " -> ";
+			for (travel::Ciudad* city : recorrido)
+				std::cout << city->nombre << " -> ";
 			std::cout << std::endl << "Precio: " << ponderacion << std::endl;
 		}
 	};
 	struct Mapa {
 		std::string nombre;
 		std::map<std::string, travel::Ciudad*> ciudades;
-		std::list<travel::Ruta> rutas;
+		std::list<travel::Ruta*> rutas;
 		std::list<std::string> secciones;
 		travel::Ciudad* inicio = nullptr;
 
@@ -81,6 +150,28 @@ namespace travel{
 			this->inicio = this->ciudades.find(nombre)->second;
 		}
 
+		void buscarRuta() {
+			rutas.clear();
+			this->inicio->generarRutas(this->rutas);
+			std::list<travel::Ruta*>::iterator it = this->rutas.begin();
+			std::list<travel::Ciudad*>::iterator ct;
+			do {
+				
+				if ((*it)->activo) {
+					ct = (*it)->recorrido.end();
+					(*ct)->generarRutas(this->rutas);
+				}
+				if(it == this->rutas.end())
+					it = this->rutas.begin();
+			} while (this->todoTerminado());
+		}
+
+		bool todoTerminado(){
+			bool notFinish = false;
+			for (travel::Ruta* ruta : this->rutas) //Con que exista una ruta sin terminar, continuara el ciclo
+				notFinish = notFinish || ruta->verificarVisita(this->secciones);
+			return notFinish;
+		}
 		int anadirCiudad(std::string nombre, std::string seccion){
 			std::map<std::string, travel::Ciudad*>::iterator it;
 			for (it = this->ciudades.begin(); it != this->ciudades.end(); ++it)
