@@ -192,19 +192,17 @@ namespace travel{
 				int min = this->rutas.front()->ponderacion;//Se establece un minimo
 				std::cout << "Se encontraron las siguientes rutas disponibles: \n";
 				for (travel::Ruta* ruta : this->rutas)//Descarte final en todas las rutas que cumplen con la condicion de todos los sectores
-					if (min < ruta->ponderacion) 
-						this->rutas.remove(ruta);
-					else if (min > ruta->ponderacion) 
+					if (min > ruta->ponderacion) 
 						min = ruta->ponderacion;
 					
 				
-				for (travel::Ruta* ruta : this->rutas) //Este segundo ciclo elimina el peor de los casos
-					if (min < ruta->ponderacion)
-						this->rutas.remove(ruta);
+				for (travel::Ruta* ruta : this->rutas) //Este segundo imprime las rutas de menor ponderacion
+					if (min == ruta->ponderacion)
+						ruta->printRuta();
 				
-				for (travel::Ruta* ruta : this->rutas) //Se imprimen los resultados
-					ruta->printRuta();
-				
+			}
+			for (int i = 0; i < ciudades.size(); i++) { //Reinicio para la siguiente ronda
+				ciudades.at(i)->rutaOptima->recorrido.clear(); ciudades.at(i)->rutaOptima->ponderacion = 0;
 			}
 		}
 
