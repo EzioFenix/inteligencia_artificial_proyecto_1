@@ -1,0 +1,13 @@
+Norte,Sur,
+Durango,Norte
+Monterrey,Norte
+Zacatecas,Norte
+Tolantongo,Norte
+CDMX,Sur
+$
+Durango:Monterrey,3;Zacatecas,4;Tolantongo,7;
+Monterrey:Durango,3;Zacatecas,5;
+Zacatecas:Durango,4;Monterrey,5;
+Tolantongo:CDMX,8;Durango,7;
+CDMX:Tolantongo,8;
+#Tolantongo
