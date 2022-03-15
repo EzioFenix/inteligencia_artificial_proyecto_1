@@ -1,5 +1,6 @@
 #include <iostream>
 #include <map>
+#include <list>
 #include <string>
 #include <fstream>
 #include <cmath>
@@ -10,10 +11,9 @@ namespace travel{
 		int ponderacion = 0;
 		bool activo = true;
 		Ruta() {}
-		Ruta(std::map<int,std::string> herencia,std::string ciudad) {
+		Ruta(std::map<int,std::string> herencia) {
 			for (int i = 0; i < herencia.size(); i++)
 				this->recorrido.insert(std::pair<int, std::string>(i, herencia.at(i)));
-			this->anadirCiudad(ciudad); //Se añade la ciudad donde se origina esta nueva ruta
 		}
 		void anadirCiudad(std::string nombre) {
 			this->recorrido.insert(std::pair<int, std::string>(this->recorrido.size(), nombre));
@@ -52,10 +52,12 @@ namespace travel{
 			this->rutaOptima = new travel::Ruta();
 		}
 
-		void generarRutas(std::map<int,travel::Ruta*> *lista){
+		std::map<int,travel::Ruta*> generarRutas(std::map<int,travel::Ruta*> lista){
 			bool noVisitado; travel::Ciudad* ciudad;
 			std::cout << "Iniciando Generacion de rutas de la ciudad: " << this->nombre << std::endl;
 			std::cout << "Destinos disponibles: " << this->destinos.size() <<std::endl;
+			if (this->rutaOptima->recorrido.empty())
+				this->rutaOptima->anadirCiudad(this->nombre);
 			for (int i = 0; i < this->destinos.size();i++) {
 				ciudad = destinos.at(i); noVisitado = true;
 				std::cout << "Operando con la ciudad: " << ciudad->nombre << std::endl;
@@ -67,15 +69,17 @@ namespace travel{
 						}
 				if (noVisitado) {//Si no se ha visitado
 						//std::cout << "Esta ciudad: " << ciudad->nombre << " cumple para generar una ruta"<<std::endl;
-						travel::Ruta* newRoad = new travel::Ruta(this->rutaOptima->recorrido,this->nombre), *lastRoad;//Se genera una nueva ruta a partir del origen
-						newRoad->ponderacion += this->precios.at(i); //Incluyendo el costo
+						travel::Ruta* newRoad = new travel::Ruta(this->rutaOptima->recorrido), *lastRoad;//Se genera una nueva ruta a partir del origen
+						newRoad->anadirSector(this->seccion);
+						newRoad->ponderacion = this->precios.at(i) + this->rutaOptima->ponderacion; //Incluyendo el costo
 						lastRoad = ciudad->visitarCiudad(newRoad); //Hacia el destino en cuestion
 						if (lastRoad->recorrido.empty()) //Si no ha sido visitada por otra ruta
-							lista->insert(std::pair<int,travel::Ruta*>(lista->size(),newRoad)); //Se añade a la lista de rutas
+							lista.insert(std::pair<int,travel::Ruta*>(lista.size(),newRoad)); //Se añade a la lista de rutas
 						else if (lastRoad->ponderacion > newRoad->ponderacion) //Si esta nueva ruta, fue más barata que la establecida
 							eliminarDescendencia(lista, lastRoad); //Se eliminará la descendencia que esta hubiese tenido
 				}
 			}
+			return lista;
 		}
 		travel::Ruta* visitarCiudad(travel::Ruta* nuevaRuta) {
 			if (this->rutaOptima->recorrido.empty()) { //Si la ciudad no tiene una ruta aun
@@ -95,13 +99,13 @@ namespace travel{
 			}
 			return nuevaRuta;
 		}
-		void eliminarDescendencia(std::map<int,travel::Ruta*> *lista, travel::Ruta* objetivo) {
-			for (int i = 0; i < lista->size(); i++)
+		void eliminarDescendencia(std::map<int,travel::Ruta*> lista, travel::Ruta* objetivo) {
+			for (int i = 0; i < lista.size(); i++)
 				for (int j = 0; j < objetivo->recorrido.size(); j++)
-					if (objetivo->recorrido.at(j).compare(lista->at(i)->recorrido.at(j)))
+					if (objetivo->recorrido.at(j).compare(lista.at(i)->recorrido.at(j)))
 						break;
 					else {
-						lista->erase(i); i--;
+						lista.erase(i); i--;
 					}
 		}
 
@@ -152,13 +156,12 @@ namespace travel{
 	struct Mapa {
 		std::string nombre;
 		std::map<int, travel::Ciudad*> ciudades;
-		std::map<int, travel::Ruta*> *rutas;
+		std::map<int,travel::Ruta*> rutas;
 		std::map<int, std::string> secciones;
 		travel::Ciudad* inicio;
 
 		Mapa(std::string nombre,bool nuevo) {
 			this->nombre = nombre;
-			this->rutas = new std::map<int, travel::Ruta*>();
 			if(nuevo)
 				this->secciones.insert(std::pair<int,std::string>(0,"sect_0"));
 		}
@@ -170,47 +173,49 @@ namespace travel{
 		}
 		//Metodo Principal
 		void buscarRuta(){
-			rutas->clear();
-			this->inicio->generarRutas(this->rutas);
+			rutas.clear();
+			rutas = this->inicio->generarRutas(this->rutas);
 			int i = 0;
 			while (todoTerminado()) {
 				std::cout << "Iniciando Ciclo\n";
-				if(this->rutas->at(i)->activo)
+				if(this->rutas.at(i)->activo)
 					for (int j = 0; j < this->ciudades.size(); j++)
-						if (!this->ciudades.at(j)->nombre.compare(this->rutas->at(i)->recorrido.at(this->rutas->at(i)->recorrido.size()-1))) {
-							this->ciudades.at(j)->generarRutas(this->rutas);
-							this->rutas->erase(i);
+						if (!this->ciudades.at(j)->nombre.compare(this->rutas.at(i)->recorrido.at(this->rutas.at(i)->recorrido.size()-1))) {
+							rutas = this->ciudades.at(j)->generarRutas(this->rutas);
+							this->rutas.erase(i);
 							break;
 						}
-				if (i >= this->rutas->size())
+				if (i >= this->rutas.size())
 					i = 0;
 				else
 					i++;
 			}
-			if (this->rutas->empty())
+			if (this->rutas.empty())
 				std::cout << "Ninguna ruta fue capaz de alcanzar todos los sectores del mapa\n";
 			else {
-				int min = this->rutas->at(0)->ponderacion;//Se establece un minimo
+				int min = this->rutas.at(0)->ponderacion;//Se establece un minimo
 				std::cout << "Se encontraron las siguientes rutas disponibles: \n";
-				for (i = 0; i < this->rutas->size(); i++) {//Descarte final en todas las rutas que cumplen con la condicion de todos los sectores
-					if (min < this->rutas->at(i)->ponderacion) {
-						this->rutas->erase(i); i--;
-					}else if (min > this->rutas->at(i)->ponderacion) {
-						min = this->rutas->at(i)->ponderacion; i = 0;
+				for (i = 0; i < this->rutas.size(); i++) {//Descarte final en todas las rutas que cumplen con la condicion de todos los sectores
+					if (min < this->rutas.at(i)->ponderacion) {
+						this->rutas.erase(i); i--;
+					}else if (min > this->rutas.at(i)->ponderacion) {
+						min = this->rutas.at(i)->ponderacion; i = 0;
 					}
 				}
-				for (i = 0; i < this->rutas->size(); i++) //Se imprimen los resultados
-					this->rutas->at(i)->printRuta();
+				for (i = 0; i < this->rutas.size(); i++) //Se imprimen los resultados
+					this->rutas.at(i)->printRuta();
 				
 			}
 		}
 
 		bool todoTerminado(){
 			bool notFinish = false;
-			std::cout << " Tamano de la lista: " << this->rutas->size() << std::endl;
-			for (int i = 0; i < this->rutas->size(); i++) { //Con que exista una ruta sin terminar, continuara el ciclo
-				std::cout << " Iterador en: " << i << std::endl;
-				notFinish = notFinish || this->rutas->at(i)->verificarVisita(this->secciones);
+			if (this->rutas.empty())
+				return notFinish;
+			std::cout << "Antes de provocar un desborde, el tamanio es de: " << this->rutas.size() << std::endl;
+			for (int i = 0; i < this->rutas.size(); i++) {  //Con que exista una ruta sin terminar, continuara el ciclo
+				notFinish = notFinish || this->rutas.at(i)->verificarVisita(this->secciones);
+				std::cout << "Ultimo visitado antes del desborde: " << i << std::endl;
 			}
 			return notFinish;
 		}
@@ -330,9 +335,10 @@ travel::Mapa* cargarMapa(std::string nombre){
 			begin += size + 1; size = 0;
 		}else size++;
 	bool state = true;
-	std::getline(archive, data); size = 0;
+	size = 0;
 	while (!archive.eof() && state) {//Ciudades
 		size = 0;
+		std::getline(archive, data);
 		for (char a : data) {
 			if (a == ',') 
 				mapa->anadirCiudad(data.substr(0, size), data.substr(size + 1));
@@ -340,7 +346,6 @@ travel::Mapa* cargarMapa(std::string nombre){
 			if (a == '$')
 				state = false;
 		}
-		std::getline(archive, data);
 	}
 	state = true;
 	while (!archive.eof() && state) {//Enlaces
