@@ -8,6 +8,11 @@ Integrantes :
 
 # Introducción
 
+La creación de una solución para inteligencia artificial usualmente suele basarse en búsqueda y encuentro de soluciones optimas, tales como rutas optimas, cálculos de ponderación, o simplemente encontrar una posibilidad que cumpla una condición dada, pueden existir variantes que mezclen estos conceptos, pero el planteamiento es el mismo.
+Los árboles de búsqueda pueden resolverse tanto el recorrer de este mediante profundidad (llamado solución por búsqueda en profundidad), también existe otra variante, que se la solución por búsqueda en anchura. Las dos deberían ser perfectamente equivalentes para un mismo problema, la diferencia es que una implementación puede estar utilizando más CPU, ya que es factible que con una sea paralelizadle y con la otra no, en algunos casos la versión de por anchura gasta más recursos, ya que esta tiene que guardar más datos en memoria mientras está calculando ponderaciones.
+El problema que se tratará en el presente documento queda explicado de como realizar una solución por cualquiera de las dos metodologías (anchura o profundidad), sólo que para cuestiones de análisis y rendimiento, sólo se explicará una de ellas, ya que las implementaciones se plantean que estén hechas en lenguas diferentes, si fueran del mismo lenguaje se pueden comparar métricas, en otros casos no es posible. Únicamente se darán pinceladas cómo es posible resolverlo de dicha manera, pero la implementación sólo existe de una. 
+
+
 
 
 # Definición del problema
